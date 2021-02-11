@@ -38,38 +38,40 @@ namespace TheWideWorld
             MenuOptions();
 
             bool isInputValid = false;
-
-            while (!isInputValid)
+            try
             {
-
-                string playerChose = Console.ReadLine().ToUpper();
-                Console.WriteLine($"Your chose is {playerChose}");
-
-                switch (playerChose)
+                while (!isInputValid)
                 {
-                    case "S":
-                        gameService.StartTheGame();
-                        isInputValid = true;
-                        break;
+                    switch (Console.ReadLine().ToUpper())
+                    {
+                        case "S":
+                            gameService.StartTheGame();
+                            isInputValid = true;
+                            break;
 
-                    case "L":
-                        LoadTheGame();
-                        isInputValid = true;
-                        break;
+                        case "L":
+                            LoadTheGame();
+                            isInputValid = true;
+                            break;
 
-                    case "C":
-                        CreateCharacter();
-                        isInputValid = true;
-                        break;
+                        case "C":
+                            CreateCharacter();
+                            isInputValid = true;
+                            break;
 
-                    default:
-                        Console.WriteLine("Pick the right letter!");
-                        MenuOptions();
-                        isInputValid = false;
-                        break;
+                        default:
+                            Console.WriteLine("Pick the right letter!");
+                            MenuOptions();
+                            isInputValid = false;
+                            break;
+                    }
                 }
             }
-            Console.ReadLine();
+            catch (Exception excptn)
+            {
+                Console.WriteLine("Something went wrong. I think it's orcs!\n Please, restart the game.");
+                Console.WriteLine($"The message : {excptn.Message}");
+            }
         }
         /// <summary>
         /// Метод с отрисовкой главного меню.

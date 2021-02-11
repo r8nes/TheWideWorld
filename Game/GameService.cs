@@ -6,6 +6,8 @@ using TheWideWorld.Entities.Interfaces;
 using TheWideWorld.Entities.Models;
 using TheWideWorld.Game.Interfaces;
 
+
+
 namespace TheWideWorld.Game
 {
 
@@ -27,8 +29,7 @@ namespace TheWideWorld.Game
         /// <returns>Запускает или не запускат дальнейшую игру</returns>
         public bool StartTheGame(Adventure adventure = null)
         {
-            try
-            {
+
                 if (adventure == null)
                 {
                     adventure = adventureService.GetInitialAdventure();
@@ -59,14 +60,10 @@ namespace TheWideWorld.Game
                 string name = Console.ReadLine();
                 character = characterService.LoadCharacter(charactersInRange[Convert.ToInt32(name)].Name);
 
-            }
+            
 
 
-            catch (Exception excptn)
-            {
-                Console.WriteLine("Something went wrong. I think it's orcs!\n Please, restart the game.");
-                Console.WriteLine($"The message : {excptn.Message}");
-            }
+            
             return true;
         }
 
