@@ -40,7 +40,7 @@ namespace TheWideWorld.Entities
         /// <param name="minLevel"></param>
         /// <param name="maxLevel"></param>
         /// <returns></returns>
-        public List<Character> GetCharacterLevels(int minLevel = 0, int maxLevel = 20)
+        public List<Character> GetCharactersLevel(int minLevel = 0, int maxLevel = 20)
         {
             string basePath = $"{AppDomain.CurrentDomain.BaseDirectory}Character";
             List<Character> charactersInRange = new List<Character>();

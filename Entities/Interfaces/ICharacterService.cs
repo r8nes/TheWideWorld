@@ -7,6 +7,6 @@ namespace TheWideWorld.Entities.Interfaces
     {
         Character LoadCharacter(string name);
 
-        List<Character> GetCharacterLevels(int minLevel = 0, int maxLevel = 20);
+        List<Character> GetCharactersLevel(int minLevel = 0, int maxLevel = 20);
     }
 }

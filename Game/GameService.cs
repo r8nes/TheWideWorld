@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using TheWideWorld.Adventures;
 using TheWideWorld.Adventures.Interfaces;
+using TheWideWorld.Adventures.Models;
 using TheWideWorld.Entities.Interfaces;
 using TheWideWorld.Entities.Models;
 using TheWideWorld.Game.Interfaces;
-
-
+using TheWideWorld.Utilites.Interfaces;
 
 namespace TheWideWorld.Game
 {
@@ -15,12 +15,14 @@ namespace TheWideWorld.Game
     {
         private IAdventureService adventureService;
         private ICharacterService characterService;
+        private IMessageHandler messageHandler;
         private Character character;
 
-        public GameService(IAdventureService AdventureService, ICharacterService CharacterService)
+        public GameService(IAdventureService AdventureService, ICharacterService CharacterService, IMessageHandler MessageHandler)
         {
             adventureService = AdventureService;
             characterService = CharacterService;
+            messageHandler = MessageHandler;
         }
         /// <summary>
         /// Метод запускающий приключение и предоставляющий выбор персонажа.
@@ -36,38 +38,55 @@ namespace TheWideWorld.Game
                 }
 
                 CreateAdventureBanner(adventure.Title);
-                CreateDescription(adventure.Description);
+                CreateDescription(adventure);
 
-                List<Character> charactersInRange = characterService.GetCharacterLevels(adventure.MinimumLevel, adventure.MaxLevel);
+                List<Character> charactersInRange = characterService.GetCharactersLevel(adventure.MinimumLevel, adventure.MaxLevel);
 
                 if (charactersInRange.Count == 0)
                 {
-                    Console.WriteLine("Probably, the goblin king killed your character erlier. Try to create a new.");
+                messageHandler.Write("Probably, the goblin king killed your character erlier. Try to create a new.");
                     return false;
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("WHO DARE WISH TO CHANCE THE DEATH???????");
+                messageHandler.Write("WHO DARE WISH TO CHANCE THE DEATH???????");
                     Console.ResetColor();
                     int characterCount = 0;
-                    foreach (var character in charactersInRange)
+                    foreach (Character character in charactersInRange)
                     {
-                        Console.WriteLine($"# {characterCount} {character.Name}: {character.Class} {character.Level}");
+                    messageHandler.Write($"# {characterCount} {character.Name}: {character.Class} {character.Level}");
                         characterCount++;
                     }
                 }
-                string name = Console.ReadLine();
+                string name = messageHandler.Read();
                 character = characterService.LoadCharacter(charactersInRange[Convert.ToInt32(name)].Name);
 
-            
-
-
-            
+            var rooms = adventure.Rooms;
+            RoomProcessor(rooms[0]);
             return true;
         }
 
-      
+        private void RoomProcessor(Room room)
+        {
+            messageHandler.Clear();
+            messageHandler.Write(new string('_', 40));
+            messageHandler.Write($"{room.RoomNumber} {room.Description}");
+
+            if (room.Exits.Count == 1) {
+                messageHandler.Write($"There are exits on the {room.Exits[0].WallLocation} wall");
+            }
+            else {
+                var exitDescription = "";
+                foreach  (Exit exit in room.Exits)
+                {
+                    exitDescription += $"{exit.WallLocation}";
+                }
+                exitDescription.Remove(exitDescription.Length - 1);
+
+                messageHandler.Write($"There room has exits on the {exitDescription} walls");
+            }
+        }
 
         /// <summary>
         /// Метод, создающий баннер-заголовок.
@@ -76,36 +95,44 @@ namespace TheWideWorld.Game
         private void CreateAdventureBanner(string title)
         {
 
-            Console.Clear();
-            Console.WriteLine();
+            messageHandler.Clear();
+            messageHandler.Read();
 
             Console.ForegroundColor = ConsoleColor.Yellow;
             for (int i = 0; i <= title.Length + 3; i++)
             {
-                Console.Write("*");
+                messageHandler.Write("*");
                 if (i == title.Length + 3)
                 {
-                    Console.Write("\n");
+                    messageHandler.Write("\n");
                 }
             }
 
-            Console.WriteLine($"| {title} |");
+            messageHandler.Write($"| {title} |");
 
             for (int i = 0; i <= title.Length + 3; i++)
             {
-                Console.Write("*");
+                messageHandler.Write("*");
                 if (i == title.Length + 3)
                 {
-                    Console.Write("\n");
+                    messageHandler.Write("\n");
                 }
             }
             Console.ResetColor();
         }
-        private static void CreateDescription(string description)
+        /// <summary>
+        /// Метод создающий описание приключения.
+        /// </summary>
+        /// <param name="description">Текст описания.</param>
+        private void CreateDescription(Adventure adventure)
         {
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.WriteLine($"\n{description.ToUpper()}");
+            Console.WriteLine($"\n{adventure.Description.ToUpper()}");
             Console.ResetColor();
+
+            messageHandler.Write($"\nLevels : {adventure.MinimumLevel} - {adventure.MaxLevel}");
+            messageHandler.Write($"\nComletion Rewards - { adventure.CompletionGoldReward} gold & {adventure.CompletionXPReward} XP");
+            messageHandler.Write();
         }
     }
 }

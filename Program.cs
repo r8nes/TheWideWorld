@@ -2,14 +2,16 @@
 using TheWideWorld.Game;
 using TheWideWorld.Adventures;
 using TheWideWorld.Entities;
+using TheWideWorld.Utilites;
 
 namespace TheWideWorld
 {
     class Program
     {
-        private static AdventureService adventuresService = new AdventureService();
-        private static CharacterService characterService = new CharacterService();
-        private static GameService gameService = new GameService(adventuresService, characterService);
+        private static readonly AdventureService adventuresService = new AdventureService();
+        private static readonly CharacterService characterService = new CharacterService();
+        private static readonly ConsoleMessageHandler messageHandler = new ConsoleMessageHandler();
+        private static GameService gameService = new GameService(adventuresService, characterService, messageHandler);
 
 
         static void Main(string[] args)
