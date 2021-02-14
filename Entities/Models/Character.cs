@@ -9,7 +9,7 @@ namespace TheWideWorld.Entities.Models
         public int Level;
         public int ArmorClass;
         public int Gold;
-        public Abilities abilities;
+        public Abilities Abilities;
         public List<IItem> Inventory;
         public int InventoryWeight;
         public string Background;

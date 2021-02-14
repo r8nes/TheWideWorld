@@ -8,6 +8,16 @@ namespace TheWideWorld.Game
 {
     public class Dice
     {
+        public int RollDice(List<DiceType> DiceToRoll) 
+        {
+            Random rnd = new Random();
+            int total = 0;
+            foreach (DiceType die in DiceToRoll)
+            {
+                total += rnd.Next(1,  (int)die);
+            }
+            return total;    
+        }
     }
 
     public enum DiceType { 
