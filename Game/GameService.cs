@@ -77,14 +77,15 @@ namespace TheWideWorld.Game
                 messageHandler.Write($"There are exits on the {room.Exits[0].WallLocation} wall");
             }
             else {
-                var exitDescription = "";
+                var exitDescription = " ";
                 foreach  (Exit exit in room.Exits)
                 {
-                    exitDescription += $"{exit.WallLocation}";
-                }
-                exitDescription.Remove(exitDescription.Length - 1);
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    exitDescription += $" {exit.WallLocation},";
+                    Console.ResetColor();
+                } 
 
-                messageHandler.Write($"There room has exits on the {exitDescription} walls");
+                messageHandler.Write($"There room has exits on the{exitDescription.Remove(exitDescription.Length - 1)} walls.");
             }
         }
 
@@ -96,12 +97,11 @@ namespace TheWideWorld.Game
         {
 
             messageHandler.Clear();
-            messageHandler.Read();
 
             Console.ForegroundColor = ConsoleColor.Yellow;
             for (int i = 0; i <= title.Length + 3; i++)
             {
-                messageHandler.Write("*");
+                messageHandler.Write("*", false);
                 if (i == title.Length + 3)
                 {
                     messageHandler.Write("\n");
@@ -112,7 +112,7 @@ namespace TheWideWorld.Game
 
             for (int i = 0; i <= title.Length + 3; i++)
             {
-                messageHandler.Write("*");
+                messageHandler.Write("*", false);
                 if (i == title.Length + 3)
                 {
                     messageHandler.Write("\n");

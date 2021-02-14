@@ -7,9 +7,15 @@ namespace TheWideWorld.Utilites
 {
     class ConsoleMessageHandler : IMessageHandler
     {
-        public void Write(string message)
+        public void Write(string message = "", bool withLine = true)
         {
-            Console.WriteLine(message);
+            if (withLine)
+            {
+                Console.WriteLine(message);
+            }
+            else {
+                Console.Write(message);
+            }
         }
 
         public string Read()
