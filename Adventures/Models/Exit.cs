@@ -5,7 +5,7 @@
         public bool Locked = false;
         public CompassDirection WallLocation;
         public Riddle Riddle;
-        public int LeadsToRoomNumner;
+        public int LeadsToRoom;
     }
 
     public enum CompassDirection

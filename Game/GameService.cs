@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using TheWideWorld.Adventures;
 using TheWideWorld.Adventures.Interfaces;
 using TheWideWorld.Adventures.Models;
@@ -16,7 +17,7 @@ namespace TheWideWorld.Game
         private ICharacterService characterService;
         private IMessageHandler messageHandler;
         private Character character;
-
+        private Adventure gameAdventure;
         public GameService(IAdventureService AdventureService, ICharacterService CharacterService, IMessageHandler MessageHandler)
         {
             adventureService = AdventureService;
@@ -30,15 +31,16 @@ namespace TheWideWorld.Game
         /// <returns>Запускает или не запускат дальнейшую игру</returns>
         public bool StartTheGame(Adventure adventure = null)
         {
-                if (adventure == null)
+            gameAdventure = adventure;
+                if (gameAdventure == null)
                 {
-                    adventure = adventureService.GetInitialAdventure();
+                    gameAdventure = adventureService.GetInitialAdventure();
                 }
 
-                CreateAdventureBanner(adventure.Title);
-                CreateDescription(adventure);
+                CreateAdventureBanner(gameAdventure.Title);
+                CreateDescription(gameAdventure);
 
-                List<Character> charactersInRange = characterService.GetCharactersLevel(adventure.MinimumLevel, adventure.MaxLevel);
+                List<Character> charactersInRange = characterService.GetCharactersLevel(gameAdventure.MinimumLevel, gameAdventure.MaxLevel);
 
                 if (charactersInRange.Count == 0)
                 {
@@ -60,7 +62,7 @@ namespace TheWideWorld.Game
                 string name = messageHandler.Read();
                 character = characterService.LoadCharacter(charactersInRange[Convert.ToInt32(name)].Name);
 
-            var rooms = adventure.Rooms;
+            var rooms = gameAdventure.Rooms;
             RoomProcessor(rooms[0]);
             return true;
         }
@@ -182,11 +184,22 @@ namespace TheWideWorld.Game
                             messageHandler.Write("You don't see any chests here.");
                         }
                         break;
-                    case "w":
-                    case "s":
                     case "n":
+                    case "s":
                     case "e":
-                        ExitRoom(room);
+                    case "w":
+                        CompassDirection wallLocation = CompassDirection.North;
+                        if (playerDecision == "s") wallLocation = CompassDirection.South;
+                        else if (playerDecision == "w") wallLocation = CompassDirection.West;
+                        else if (playerDecision == "e") wallLocation = CompassDirection.East;
+
+                        if (room.Exits.FirstOrDefault(x => x.WallLocation == wallLocation) != null) {
+                            ExitRoom(room, wallLocation);
+                        }
+                        else {
+                            messageHandler.Write("\n Um... That's a wall...");
+                        }
+                        ExitRoom(room, wallLocation);
                         break;
                 }
             }
@@ -245,21 +258,7 @@ namespace TheWideWorld.Game
 
                 if (disarmTrapRoll < 11)
                 {
-                    messageHandler.Write($"WOOOOP! Trap was activated. This was {room.Trap.TrapType.ToString()} trap.");
-
-                    int trapDamage = dice.RollDice(new List<DiceType> { room.Trap.DamageDie });
-
-                    int hitPoints = character.HitPoints - trapDamage;
-                    if (hitPoints < 1) {
-                        hitPoints = 0;
-                    }
-                    messageHandler.Write($"You take {trapDamage} damage. You have {hitPoints} HP");
-
-                    if (hitPoints < 1) {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        messageHandler.Write("You're dead!");
-                        Console.ResetColor();
-                    }
+                    ProcessTrapMessageAndDamage(room);
 
                 }
                 else 
@@ -272,9 +271,50 @@ namespace TheWideWorld.Game
             messageHandler.Write("No traps.");
             return;
         }
-        private void ExitRoom(Room room)
+
+        private void ProcessTrapMessageAndDamage(Room room)
         {
-            throw new NotImplementedException();
+            Dice dice = new Dice();
+
+
+            messageHandler.Write($"WOOOOP! Trap was activated. This was {room.Trap.TrapType.ToString()} trap.");
+
+            int trapDamage = dice.RollDice(new List<DiceType> { room.Trap.DamageDie });
+
+            int hitPoints = character.HitPoints - trapDamage;
+            if (hitPoints < 1)
+            {
+                hitPoints = 0;
+            }
+            messageHandler.Write($"You take {trapDamage} damage. You have {hitPoints} HP");
+
+            if (hitPoints < 1)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                messageHandler.Write("You're dead!");
+                Console.ResetColor();
+            }
+        }
+
+        private void ExitRoom(Room room, CompassDirection wallLocation)
+        {
+            if (room.Trap != null && room.Trap.TrippedOrDisarmed == false)
+            {
+                ProcessTrapMessageAndDamage(room);                 
+            }
+
+            Exit exit = room.Exits.FirstOrDefault(x => x.WallLocation == wallLocation);
+
+            if (exit == null) {
+                throw new Exception("This room doesnt have that exception");
+            }
+
+            Room newRoom = gameAdventure.Rooms.FirstOrDefault(x => x.RoomNumber == exit.LeadsToRoom);
+
+            if (newRoom == null) {
+                throw new Exception("The next room doesnt exist. The dragon might destroy it.");
+            }
+            RoomProcessor(newRoom);           
         }
 
         private void OpenChest(Chest chest)
