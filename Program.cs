@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Media;
 using TheWideWorld.Game;
 using TheWideWorld.Adventures;
 using TheWideWorld.Entities;
@@ -17,7 +18,11 @@ namespace TheWideWorld
         static void Main(string[] args)
         {
             MakeMainTitle();
-            MakeMainMenu();
+            using (SoundPlayer player = new SoundPlayer($"{AppDomain.CurrentDomain.BaseDirectory}/Sounds/shortIntro.wav")) { 
+            
+            player.Play();
+            MakeMainMenu(player);
+            }
         }
 
         private static void MakeMainTitle()
@@ -35,7 +40,7 @@ namespace TheWideWorld
         /// <summary>
         /// Метод с логикой выбора в главном меню.
         /// </summary>
-        private static void MakeMainMenu()
+        private static void MakeMainMenu(SoundPlayer player)
         {
             MenuOptions();
 
@@ -47,6 +52,7 @@ namespace TheWideWorld
                     switch (Console.ReadLine().ToUpper())
                     {
                         case "S":
+                            player.Stop();
                             gameService.StartTheGame();
                             isInputValid = true;
                             break;

@@ -158,35 +158,27 @@ namespace TheWideWorld.Game
         /// <param name="room"></param>
         private void RoomOptions(Room room)
         {
-            messageHandler.Write("MAKE A CHOSE:");
-            messageHandler.Write(new string('_', 40));
-            messageHandler.Write("(L)ook for traps");
-            messageHandler.Write("Use an exit: ");
-
-            foreach (Exit exit in room.Exits)
-            {
-                messageHandler.Write($"({exit.WallLocation.ToString().Substring(0, 1)}){exit.WallLocation.ToString().Substring(1)}");
-            }
-            if (room.Chest != null)
-            {
-                messageHandler.Write("(O)pen the chest");
-                messageHandler.Write("(C)heck chest for traps");
-            }
+            WriteRoomOptions(room);
 
             string playerDecision = messageHandler.Read().ToLower();
             bool exitRoom = false;
 
-            while (!exitRoom) {
-                switch (playerDecision) {
+            while (!exitRoom)
+            {
+                switch (playerDecision)
+                {
                     case "l":
                         CheckForTraps(room);
+                        WriteRoomOptions(room);
+                        playerDecision = messageHandler.Read().ToLower();
                         break;
                     case "o":
                         if (room.Chest != null)
                         {
                             OpenChest(room.Chest);
                         }
-                        else {
+                        else
+                        {
                             messageHandler.Write("You don't see any chests here.");
                         }
                         break;
@@ -200,6 +192,26 @@ namespace TheWideWorld.Game
             }
         }
 
+        private void WriteRoomOptions(Room room)
+        {
+            messageHandler.Write("MAKE A CHOSE:");
+            messageHandler.Write(new string('_', 40));
+            messageHandler.Write("(L)ook for traps");
+            if (room.Chest != null)
+            {
+                messageHandler.Write("(O)pen the chest");
+                messageHandler.Write("(C)heck chest for traps");
+            }
+            messageHandler.Write("Use an exit: ");
+            foreach (Exit exit in room.Exits)
+            {
+                messageHandler.Write($"({exit.WallLocation.ToString().Substring(0, 1)}){exit.WallLocation.ToString().Substring(1)}");
+            }     
+        }
+        /// <summary>
+        /// Метод который позволяет нам найти и обезвредить ловушку.
+        /// </summary>
+        /// <param name="room"></param>
         private void CheckForTraps(Room room)
         {
             if (room.Trap != null)
@@ -219,8 +231,8 @@ namespace TheWideWorld.Game
                     trapBonus += 2;
                 }
 
-                var dice = new Dice();
-                var findTrapRoll = dice.RollDice(new List<DiceType> { DiceType.D20 }) + trapBonus;
+                Dice dice = new Dice();
+                int findTrapRoll = dice.RollDice(new List<DiceType> { DiceType.D20 }) + trapBonus;
 
                 if (findTrapRoll < 12)
                 {
@@ -230,9 +242,24 @@ namespace TheWideWorld.Game
                 }
                 messageHandler.Write($"Oh, you found the trap!! Trying disarm...");
                 int disarmTrapRoll = dice.RollDice(new List<DiceType> { DiceType.D20 }) + trapBonus;
+
                 if (disarmTrapRoll < 11)
                 {
-                    messageHandler.Write("WOOOOP! Trap was activated. You take n damage");
+                    messageHandler.Write($"WOOOOP! Trap was activated. This was {room.Trap.TrapType.ToString()} trap.");
+
+                    int trapDamage = dice.RollDice(new List<DiceType> { room.Trap.DamageDie });
+
+                    int hitPoints = character.HitPoints - trapDamage;
+                    if (hitPoints < 1) {
+                        hitPoints = 0;
+                    }
+                    messageHandler.Write($"You take {trapDamage} damage. You have {hitPoints} HP");
+
+                    if (hitPoints < 1) {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        messageHandler.Write("You're dead!");
+                        Console.ResetColor();
+                    }
 
                 }
                 else 
