@@ -11,7 +11,6 @@ namespace TheWideWorld.Adventures.Models
     }
 
     public enum TrapType { 
-            Pit,
             Poison,
             Spike,
             Fire,

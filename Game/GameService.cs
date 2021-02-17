@@ -7,6 +7,7 @@ using TheWideWorld.Adventures.Models;
 using TheWideWorld.Entities.Interfaces;
 using TheWideWorld.Entities.Models;
 using TheWideWorld.Game.Interfaces;
+using TheWideWorld.Items.Models;
 using TheWideWorld.Utilites.Interfaces;
 
 namespace TheWideWorld.Game
@@ -178,6 +179,8 @@ namespace TheWideWorld.Game
                         if (room.Chest != null)
                         {
                             OpenChest(room.Chest);
+                            WriteRoomOptions(room);
+                            playerDecision = messageHandler.Read().ToLower();
                         }
                         else
                         {
@@ -188,14 +191,16 @@ namespace TheWideWorld.Game
                     case "s":
                     case "e":
                     case "w":
+
                         CompassDirection wallLocation = CompassDirection.North;
+                        
                         if (playerDecision == "s") wallLocation = CompassDirection.South;
                         else if (playerDecision == "w") wallLocation = CompassDirection.West;
                         else if (playerDecision == "e") wallLocation = CompassDirection.East;
 
                         if (room.Exits.FirstOrDefault(x => x.WallLocation == wallLocation) != null) {
                             ExitRoom(room, wallLocation);
-                        }
+                        }                      
                         else {
                             messageHandler.Write("\n Um... That's a wall...");
                         }
@@ -258,7 +263,7 @@ namespace TheWideWorld.Game
 
                 if (disarmTrapRoll < 11)
                 {
-                    ProcessTrapMessageAndDamage(room);
+                    ProcessTrapMessageAndDamage(room.Trap);
 
                 }
                 else 
@@ -272,14 +277,13 @@ namespace TheWideWorld.Game
             return;
         }
 
-        private void ProcessTrapMessageAndDamage(Room room)
+        private void ProcessTrapMessageAndDamage(Trap trap)
         {
             Dice dice = new Dice();
 
+            messageHandler.Write($"WOOOOP! Trap was activated. This was {trap.TrapType } trap.");
 
-            messageHandler.Write($"WOOOOP! Trap was activated. This was {room.Trap.TrapType.ToString()} trap.");
-
-            int trapDamage = dice.RollDice(new List<DiceType> { room.Trap.DamageDie });
+            int trapDamage = dice.RollDice(new List<DiceType> { trap.DamageDie });
 
             int hitPoints = character.HitPoints - trapDamage;
             if (hitPoints < 1)
@@ -294,13 +298,15 @@ namespace TheWideWorld.Game
                 messageHandler.Write("You're dead!");
                 Console.ResetColor();
             }
+            messageHandler.Write("Tap something to continue...");
+            messageHandler.Read();
         }
 
         private void ExitRoom(Room room, CompassDirection wallLocation)
         {
             if (room.Trap != null && room.Trap.TrippedOrDisarmed == false)
             {
-                ProcessTrapMessageAndDamage(room);                 
+                ProcessTrapMessageAndDamage(room.Trap);                 
             }
 
             Exit exit = room.Exits.FirstOrDefault(x => x.WallLocation == wallLocation);
@@ -319,8 +325,57 @@ namespace TheWideWorld.Game
 
         private void OpenChest(Chest chest)
         {
-            throw new NotImplementedException();
-        }
+            if (!chest.Locked)
+            {
+                if (chest.Trap != null)
+                {
+                    if (!chest.Trap.TrippedOrDisarmed)
+                    {
+                        ProcessTrapMessageAndDamage(chest.Trap);
+                    }
+                }
+                else 
+                {
+                    if (chest.Gold > 0)
+                    {
+                    character.Gold += chest.Gold;
+                        messageHandler.Write($"Lucky. It's not a mimic. You found {chest.Gold} gold. Your total gold is now {character.Gold}");
+                        chest.Gold = 0;
+                    }
 
+                    if (chest.Treasure != null) {
+                        messageHandler.Write($"You found {chest.Treasure.Count} items in this chest:\n");
+
+                        if (character.Inventory == null)
+                        {
+                            character.Inventory = new List<Items.Interfaces.IItem>();
+                        }
+                        foreach (var item in chest.Treasure)
+                        {
+                            messageHandler.Write(item.Name.ToString());
+                        }
+                        messageHandler.Write("\n");
+                        character.Inventory.AddRange(chest.Treasure);
+                        chest.Treasure = new List<Item>();
+                    }
+
+                    if (chest.Gold > 0 && chest.Treasure !=null)
+                    {
+                        messageHandler.Write("You find a piece of clothes. And it stinky.");
+                    }   
+                }
+            }
+            else {
+                messageHandler.Write("The chest is locked. Would you like to attempt to unlock this chest?\nTap Y or N. ");
+               string playerDecision = messageHandler.Read().ToLower();
+                switch (playerDecision)
+                {
+                    case "y":
+                        throw new NotImplementedException("No unlocking chest.");
+                    default:
+                        break;
+                }
+            }
+        }
     }
 }
