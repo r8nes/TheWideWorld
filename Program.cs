@@ -7,7 +7,7 @@ using TheWideWorld.Utilites;
 
 namespace TheWideWorld
 {
-    class Program
+     public class Program
     {
         private static readonly AdventureService adventuresService = new AdventureService();
         private static readonly CharacterService characterService = new CharacterService();
@@ -25,7 +25,7 @@ namespace TheWideWorld
             }
         }
 
-        private static void MakeMainTitle()
+        public static void MakeMainTitle()
         {
             Console.WriteLine("______________________________________________________________");
             Console.WriteLine("");
@@ -84,7 +84,7 @@ namespace TheWideWorld
         /// <summary>
         /// Метод с отрисовкой главного меню.
         /// </summary>
-        private static void MenuOptions()
+        public static void MenuOptions()
         {
             Console.WriteLine($"\n\n(S)tart the game");
             Console.WriteLine($"(L)oad the game");

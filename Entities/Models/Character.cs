@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TheWideWorld.Items.Models;
 
 namespace TheWideWorld.Entities.Models
@@ -6,15 +7,11 @@ namespace TheWideWorld.Entities.Models
     public class Character : Entity
     {
         public string Name;
-        public int Level;
-        public int ArmorClass;
-        public int Gold;
+        public int XP;
         public Abilities Abilities;
-        public List<Item> Inventory;
         public int InventoryWeight;
         public string Background;
-        public bool isAlive;
-        public List<string> AdventuresPlayed;
+        public List<Guid> AdventuresPlayed;
         public CharacterClass Class;
     }
 

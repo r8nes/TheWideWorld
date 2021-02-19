@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using TheWideWorld.Items.Models;
 
 namespace TheWideWorld.Entities.Models
 {
@@ -10,6 +7,11 @@ namespace TheWideWorld.Entities.Models
     {
         public int HitPoints = 0;
         public Attack Attack;
+        public int Gold;
+        public int Level;
+        public bool isAlive;
+        public int ArmorClass;
+        public List<Item> Inventory;
     }
 
     public class Attack {

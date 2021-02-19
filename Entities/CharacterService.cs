@@ -67,5 +67,17 @@ namespace TheWideWorld.Entities
             return charactersInRange;
            
         }
+        public bool SaveCharacter(Character character) {
+            var basePath = $"{AppDomain.CurrentDomain.BaseDirectory}Character";
+
+            if (File.Exists($"{basePath}\\{character.Name}.json"))
+            {
+                File.WriteAllText($"{basePath}\\{character.Name}.json", JsonConvert.SerializeObject(character));
+                return true;
+            }
+            else {
+                throw new Exception("Character not found");
+            }
+        }
     }
 }

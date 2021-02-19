@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using TheWideWorld.Utilites.Interfaces;
 
 namespace TheWideWorld.Utilites
@@ -18,6 +16,11 @@ namespace TheWideWorld.Utilites
             }
         }
 
+        public void WriteRead(string message)
+        {
+            Console.WriteLine(message);
+            Console.ReadLine();
+        }
         public string Read()
         {
             return Console.ReadLine();

@@ -17,8 +17,11 @@ namespace TheWideWorld.Game
         private IAdventureService adventureService;
         private ICharacterService characterService;
         private IMessageHandler messageHandler;
+
         private Character character;
         private Adventure gameAdventure;
+        private bool gameWon = false;
+        private string gameWinnigDescription;
         public GameService(IAdventureService AdventureService, ICharacterService CharacterService, IMessageHandler MessageHandler)
         {
             adventureService = AdventureService;
@@ -169,6 +172,9 @@ namespace TheWideWorld.Game
                 {
                     case "l":
                         CheckForTraps(room);
+                        if (gameWon) {
+                            GameOver();
+                        }
                         WriteRoomOptions(room);
                         playerDecision = messageHandler.Read().ToLower();
                         break;
@@ -176,9 +182,13 @@ namespace TheWideWorld.Game
                         if (room.Chest != null)
                         {
                             OpenChest(room.Chest);
+                            if (gameWon)
+                            {
+                                GameOver();
+                            }
                             WriteRoomOptions(room);
-                            playerDecision = messageHandler.Read().ToLower();
-                        }
+                            playerDecision = messageHandler.Read().ToLower();                     
+                      }
                         else
                         {
                             messageHandler.Write("You don't see any chests here.");
@@ -288,7 +298,7 @@ namespace TheWideWorld.Game
 
             int trapDamage = dice.RollDice(new List<DiceType> { trap.DamageDie });
             character.HitPoints -= trapDamage;
-            int hitPoints = character.HitPoints - trapDamage;
+            int hitPoints = character.HitPoints;
             if (hitPoints < 1)
             {
                 hitPoints = 0;
@@ -301,8 +311,7 @@ namespace TheWideWorld.Game
                 messageHandler.Write("You're dead!");
                 Console.ResetColor();
             }
-            messageHandler.Write("Tap something to continue...");
-            messageHandler.Read();
+          
         }
         /// <summary>
         /// Метод реализующий перемещение по локации
@@ -328,11 +337,14 @@ namespace TheWideWorld.Game
             if (newRoom == null) {
                 throw new Exception("The next room doesnt exist. The dragon might destroy it.");
             }
-            if ((exit.Lock == null || !exit.Lock.Locked) || TryUnlock(ref exit.Lock)) 
+            if ((exit.Lock == null || !exit.Lock.Locked) || TryUnlock(exit.Lock)) 
             { 
-            RoomProcessor(newRoom);           
+              RoomProcessor(newRoom);           
             }
-
+            else
+            {
+                RoomProcessor(room);
+            }
         }
         /// <summary>
         /// Метод реализующий взаимодействие с сундуками
@@ -361,42 +373,62 @@ namespace TheWideWorld.Game
                     {
                         messageHandler.Write($"You found {chest.Treasure.Count} items in this chest:\n");
 
-                        if (character.Inventory == null)
-                        {
-                            character.Inventory = new List<Item>();
-                        }
                         foreach (var item in chest.Treasure)
                         {
-                            messageHandler.Write(item.Name.ToString());
+                            messageHandler.Write($"{ item.Name.ToString()} - {item.Description.ToString()}");
+
+                            
+                            if (item.ObjectiveNumber == gameAdventure.FinalObjective)
+                            {
+                                gameWon = true;
+                                character.Gold += Convert.ToInt32(gameAdventure.CompletionGoldReward);
+                                character.XP += Convert.ToInt32(gameAdventure.CompletionXPReward);
+                                character.AdventuresPlayed.Add(gameAdventure.GUID);
+                            }
                         }
                         messageHandler.Write("\n");
 
                         character.Inventory.AddRange(chest.Treasure);
                         chest.Treasure = new List<Item>();
+                        if (gameWon)
+                        {
+                            messageHandler.Write("***********************************************************");
+                            messageHandler.Write("*             YOU DID IT! THE QUEST COMLITIED!            *");
+                            messageHandler.Write("***********************************************************");
+                            messageHandler.Write("*" + gameWinnigDescription +"*");
+                            messageHandler.Write("You obtained " + gameAdventure.CompletionGoldReward + " gold");
+                            messageHandler.Write("You gain " + gameAdventure.CompletionXPReward +  "XP");
+                            messageHandler.Write(character.Name + " has now " + character.XP + " XP and" + character.Gold + " gold");
+                        }
                         return;
                     }
 
-                    if (chest.Gold > 0 && (chest.Treasure !=null || chest.Treasure.Count >0))
+                    if (chest.Gold == 0 && (chest.Treasure == null || chest.Treasure.Count == 0))
                     {
-                        messageHandler.Write("You find a piece of clothes. And it stinky...");
+                        messageHandler.Write("You find a piece of clothes. And it stinks...");
                     }   
                 }
             }
             else {
 
-                if (TryUnlock(ref chest.Lock))
+                if (TryUnlock(chest.Lock))
                 {
                     OpenChest(chest);
+                    if (gameWon)
+                    {
+                        GameOver();
+                    }
                 }
             }
         }
+
+
         /// <summary>
         /// Метод реализующий действие "Вскрыть замок"
         /// </summary>
-        /// <param name="character"></param>
         /// <param name="theLock">Замок, передающийся ссылкой</param>
         /// <returns></returns>
-        private bool TryUnlock(ref Lock theLock)
+        private bool TryUnlock(Lock theLock)
         {
             if (!theLock.Locked) return true;
             bool hasOption = true;
@@ -406,7 +438,7 @@ namespace TheWideWorld.Game
             {
                 if (!theLock.Attempted)
                 {
-                    messageHandler.Write("The chest is locked. Would you like to attempt to unlock this chest?\n" +
+                    messageHandler.Write("It's locked. Would you like to attempt to unlock the lock?\n" +
                         "(K)ey \n (L)ockpik \n (B)ash \n (W)alk away");
                     string playerDecision = messageHandler.Read().ToLower();
                     switch (playerDecision)
@@ -415,13 +447,13 @@ namespace TheWideWorld.Game
 
                             if (character.Inventory.FirstOrDefault(x => x.Name == ItemType.Key && x.ObjectiveNumber == theLocalLock.KeyNumber) != null)
                             {
-                                messageHandler.Write("You have the right key! It unlocks the lock");
+                                messageHandler.WriteRead("You have the right key! It unlocks the lock");
                                 theLock.Locked = false;
                                 return true;
                             }
                             else
                             {
-                                messageHandler.Write("You don't have a key for the chest. \n");
+                                messageHandler.Write("You don't have a key for the lock. \n");
                             }
 
                             break;
@@ -447,11 +479,11 @@ namespace TheWideWorld.Game
 
                                 if (pickRoll > 12)
                                 {
-                                    messageHandler.Write("Nice... The lock was bushed. Luck smiles you.");
+                                    messageHandler.WriteRead("Nice... The lock was bushed. Luck smiles you.");
                                     theLock.Attempted = true;
                                     return true;
                                 }
-                                messageHandler.Write("Damn. You can't bludge the lock.\n");
+                                messageHandler.WriteRead("Damn. You can't bludge the lock.\n");
                                 theLock.Attempted = true;
                                 break;
                             }
@@ -464,13 +496,13 @@ namespace TheWideWorld.Game
                             int bashRoll = (dice.RollDice(new List<DiceType> { DiceType.D20 }) + bashBonus);
                             if (bashRoll > 16)
                             {
-                                messageHandler.Write($"You submissed with a lock and snaped it out with your kick. Nice!");
+                                messageHandler.WriteRead($"You submissed with a lock and snaped it out with your kick. Nice!");
 
                                 theLock.Locked = false;
                                 theLock.Attempted = true;
                                 return true;
                             }
-                            messageHandler.Write("Ouch. You caught a splinter under your nail. Looser.");
+                            messageHandler.WriteRead("Ouch. You caught a splinter under your nail. Looser.");
                             theLock.Attempted = true;
                             break;
                         default:
@@ -478,24 +510,31 @@ namespace TheWideWorld.Game
                     }
                 }
                 else {
-                    if (character.Inventory == null)
-                    {
-                        character.Inventory = new List<Item>();
-                    }
+                 
                     if (character.Inventory.FirstOrDefault(x => x.Name == ItemType.Key && x.ObjectiveNumber == theLocalLock.KeyNumber) != null)
                     {
-                        messageHandler.Write($"You've tried picking or bashing but you have the right key, stupid {character.Class}");
+                        messageHandler.WriteRead($"You've tried picking or bashing but you have the right key, stupid {character.Class}");
                         theLock.Locked = false;
                         return true;
                     }
                     else
                     {
-                        messageHandler.Write("You can do nothing in this situation. Find the key. \n");
+                        messageHandler.WriteRead("You can do nothing in this situation. Find the key. \n");
                         return false;                     
                     }
                 }
             }
             return false;
+        }
+
+        private void GameOver()
+        {
+            characterService.SaveCharacter(character);
+            character = new Character();
+            messageHandler.WriteRead("The quest is over. Pick a new one.");
+            messageHandler.Clear();
+            Program.MakeMainTitle();
+            Program.MenuOptions();
         }
     }
 }
