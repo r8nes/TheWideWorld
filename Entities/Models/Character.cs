@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using TheWideWorld.Items.Interfaces;
+using TheWideWorld.Items.Models;
 
 namespace TheWideWorld.Entities.Models
 {
@@ -10,7 +10,7 @@ namespace TheWideWorld.Entities.Models
         public int ArmorClass;
         public int Gold;
         public Abilities Abilities;
-        public List<IItem> Inventory;
+        public List<Item> Inventory;
         public int InventoryWeight;
         public string Background;
         public bool isAlive;

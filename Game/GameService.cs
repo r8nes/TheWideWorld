@@ -67,7 +67,6 @@ namespace TheWideWorld.Game
             RoomProcessor(rooms[0]);
             return true;
         }
-
         /// <summary>
         /// Метод, создающий баннер-заголовок.
         /// </summary>
@@ -121,7 +120,6 @@ namespace TheWideWorld.Game
             RoomDescription(room);
             RoomOptions(room);
         }
-
         /// <summary>
         /// Создаем описание комнаты для игрока.
         /// </summary>
@@ -154,7 +152,6 @@ namespace TheWideWorld.Game
                 messageHandler.Write($"There is a chest in a room!");
             }
         }
-
         /// <summary>
         /// Метод создающий отрисовку нужных опций для комнаты
         /// </summary>
@@ -209,7 +206,10 @@ namespace TheWideWorld.Game
                 }
             }
         }
-
+        /// <summary>
+        /// Метод отрисовывающий опции для комнаты
+        /// </summary>
+        /// <param name="room"></param>
         private void WriteRoomOptions(Room room)
         {
             messageHandler.Write("MAKE A CHOSE:");
@@ -276,7 +276,10 @@ namespace TheWideWorld.Game
             messageHandler.Write("No traps.");
             return;
         }
-
+        /// <summary>
+        /// Метод реализующий работу ловушек.
+        /// </summary>
+        /// <param name="trap"></param>
         private void ProcessTrapMessageAndDamage(Trap trap)
         {
             Dice dice = new Dice();
@@ -301,7 +304,11 @@ namespace TheWideWorld.Game
             messageHandler.Write("Tap something to continue...");
             messageHandler.Read();
         }
-
+        /// <summary>
+        /// Метод реализующий перемещение по локации
+        /// </summary>
+        /// <param name="room"></param>
+        /// <param name="wallLocation"></param>
         private void ExitRoom(Room room, CompassDirection wallLocation)
         {
             if (room.Trap != null && room.Trap.TrippedOrDisarmed == false)
@@ -322,20 +329,22 @@ namespace TheWideWorld.Game
             }
             RoomProcessor(newRoom);           
         }
-
+        /// <summary>
+        /// Метод реализующий взаимодействие с сундуками
+        /// </summary>
+        /// <param name="chest"></param>
         private void OpenChest(Chest chest)
         {
-            if (!chest.Locked)
+            if (chest.Lock == null || !chest.Lock.Locked)
             {
-                if (chest.Trap != null)
-                {
-                    if (!chest.Trap.TrippedOrDisarmed)
-                    {
+                if (chest.Trap != null && !chest.Trap.TrippedOrDisarmed)
+                { 
                         ProcessTrapMessageAndDamage(chest.Trap);
-                    }
+                        chest.Trap.TrippedOrDisarmed = true;
                 }
                 else 
                 {
+                    messageHandler.Write("Opening chest... ");
                     if (chest.Gold > 0)
                     {
                     character.Gold += chest.Gold;
@@ -343,39 +352,141 @@ namespace TheWideWorld.Game
                         chest.Gold = 0;
                     }
 
-                    if (chest.Treasure != null) {
+                    if (chest.Treasure != null && chest.Treasure.Count > 0)
+                    {
                         messageHandler.Write($"You found {chest.Treasure.Count} items in this chest:\n");
 
                         if (character.Inventory == null)
                         {
-                            character.Inventory = new List<Items.Interfaces.IItem>();
+                            character.Inventory = new List<Item>();
                         }
                         foreach (var item in chest.Treasure)
                         {
                             messageHandler.Write(item.Name.ToString());
                         }
                         messageHandler.Write("\n");
+
                         character.Inventory.AddRange(chest.Treasure);
                         chest.Treasure = new List<Item>();
+                        return;
                     }
 
-                    if (chest.Gold > 0 && chest.Treasure !=null)
+                    if (chest.Gold > 0 && (chest.Treasure !=null || chest.Treasure.Count >0))
                     {
-                        messageHandler.Write("You find a piece of clothes. And it stinky.");
+                        messageHandler.Write("You find a piece of clothes. And it stinky...");
                     }   
                 }
             }
             else {
-                messageHandler.Write("The chest is locked. Would you like to attempt to unlock this chest?\nTap Y or N. ");
-               string playerDecision = messageHandler.Read().ToLower();
-                switch (playerDecision)
+
+                if (TryUnlock(character, ref chest.Lock))
                 {
-                    case "y":
-                        throw new NotImplementedException("No unlocking chest.");
-                    default:
-                        break;
+                    OpenChest(chest);
                 }
             }
+        }
+        /// <summary>
+        /// Метод реализующий действие "Вскрыть замок"
+        /// </summary>
+        /// <param name="character"></param>
+        /// <param name="theLock">Замок, передающийся ссылкой</param>
+        /// <returns></returns>
+        private bool TryUnlock(Character character, ref Lock theLock)
+        {
+            if (!theLock.Locked) return true;
+            bool hasOption = true;
+            Dice dice = new Dice();
+            Lock theLocalLock = theLock;
+            while (hasOption)
+            {
+                if (!theLock.Attempted)
+                {
+                    messageHandler.Write("The chest is locked. Would you like to attempt to unlock this chest?\n" +
+                        "(K)ey \n (L)ockpik \n (B)ash \n (W)alk away");
+                    string playerDecision = messageHandler.Read().ToLower();
+                    switch (playerDecision)
+                    {
+                        case "k":
+
+                            if (character.Inventory.FirstOrDefault(x => x.Name == ItemType.Key && x.ObjectiveNumber == theLocalLock.KeyNumber) != null)
+                            {
+                                messageHandler.Write("You have the right key! It unlocks the lock");
+                                theLock.Locked = false;
+                                return true;
+                            }
+                            else
+                            {
+                                messageHandler.Write("You don't have a key for the chest. \n");
+                            }
+
+                            break;
+
+                        case "l":
+
+                            if (character.Inventory.FirstOrDefault(x => x.Name == ItemType.Lockpicks) == null)
+                            {
+                                messageHandler.Write("You dom't have lockpicks.\n");
+                                break;
+                            }
+                            else
+                            {
+
+                                int lockPicksBonus = 0 + character.Abilities.Dexterity;
+
+                                if (character.Class == CharacterClass.Rough)
+                                {
+                                    lockPicksBonus += 2;
+                                }
+
+                                int pickRoll = (dice.RollDice(new List<DiceType> { DiceType.D20 }) + lockPicksBonus);
+
+                                if (pickRoll > 12)
+                                {
+                                    messageHandler.Write("Nice... The lock was bushed. Luck smiles you.");
+                                    theLock.Attempted = true;
+                                    return true;
+                                }
+                                messageHandler.Write("Damn. You can't bludge the lock.\n");
+                                theLock.Attempted = true;
+                                break;
+                            }
+                        case "b":
+                            int bashBonus = 0 + character.Abilities.Strength;
+                            if (character.Class == CharacterClass.Fighter)
+                            {
+                                bashBonus += 2;
+                            }
+                            int bashRoll = (dice.RollDice(new List<DiceType> { DiceType.D20 }) + bashBonus);
+                            if (bashRoll > 16)
+                            {
+                                messageHandler.Write($"You submissed with a lock and snaped it out with your kick. Nice!");
+
+                                theLock.Locked = false;
+                                theLock.Attempted = true;
+                                return true;
+                            }
+                            messageHandler.Write("Ouch. You caught a splinter under your nail. Looser.");
+                            theLock.Attempted = true;
+                            break;
+                        default:
+                            return false;
+                    }
+                }
+                else {
+                    if (character.Inventory.FirstOrDefault(x => x.Name == ItemType.Key && x.ObjectiveNumber == theLocalLock.KeyNumber) != null)
+                    {
+                        messageHandler.Write($"You've tried picking or bashing but you have the right key, stupid {character.Class}");
+                        theLock.Locked = false;
+                        return true;
+                    }
+                    else
+                    {
+                        messageHandler.Write("You can do nothing in this situation. Find the key. \n");
+                        return true;                     
+                    }
+                }
+            }
+            return false;
         }
     }
 }

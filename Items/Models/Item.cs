@@ -18,6 +18,7 @@ namespace TheWideWorld.Items.Models
 
     public enum ItemType
     { 
+        Key,
         Rope,
         Torch,
         HolySymbol,
@@ -28,6 +29,7 @@ namespace TheWideWorld.Items.Models
         Rune,
         Silver,
         Gold,
-        Wood 
+        Wood,
+        Lockpicks
     }
 }
