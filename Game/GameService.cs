@@ -56,7 +56,7 @@ namespace TheWideWorld.Game
                     int characterCount = 0;
                     foreach (Character character in charactersInRange)
                     {
-                    messageHandler.Write($"# {characterCount} {character.Name}: {character.Class} {character.Level}");
+                    messageHandler.Write($"# {characterCount} {character.Name}: {character.Class} {character.Level} HP: {character.HitPoints}");
                         characterCount++;
                     }
                 }
@@ -287,7 +287,7 @@ namespace TheWideWorld.Game
             messageHandler.Write($"WOOOOP! Trap was activated. This was {trap.TrapType } trap.");
 
             int trapDamage = dice.RollDice(new List<DiceType> { trap.DamageDie });
-
+            character.HitPoints -= trapDamage;
             int hitPoints = character.HitPoints - trapDamage;
             if (hitPoints < 1)
             {
@@ -313,7 +313,8 @@ namespace TheWideWorld.Game
         {
             if (room.Trap != null && room.Trap.TrippedOrDisarmed == false)
             {
-                ProcessTrapMessageAndDamage(room.Trap);                 
+                ProcessTrapMessageAndDamage(room.Trap);
+                room.Trap.TrippedOrDisarmed = true;
             }
 
             Exit exit = room.Exits.FirstOrDefault(x => x.WallLocation == wallLocation);
@@ -327,7 +328,11 @@ namespace TheWideWorld.Game
             if (newRoom == null) {
                 throw new Exception("The next room doesnt exist. The dragon might destroy it.");
             }
+            if ((exit.Lock == null || !exit.Lock.Locked) || TryUnlock(ref exit.Lock)) 
+            { 
             RoomProcessor(newRoom);           
+            }
+
         }
         /// <summary>
         /// Метод реализующий взаимодействие с сундуками
@@ -379,7 +384,7 @@ namespace TheWideWorld.Game
             }
             else {
 
-                if (TryUnlock(character, ref chest.Lock))
+                if (TryUnlock(ref chest.Lock))
                 {
                     OpenChest(chest);
                 }
@@ -391,7 +396,7 @@ namespace TheWideWorld.Game
         /// <param name="character"></param>
         /// <param name="theLock">Замок, передающийся ссылкой</param>
         /// <returns></returns>
-        private bool TryUnlock(Character character, ref Lock theLock)
+        private bool TryUnlock(ref Lock theLock)
         {
             if (!theLock.Locked) return true;
             bool hasOption = true;
@@ -473,6 +478,10 @@ namespace TheWideWorld.Game
                     }
                 }
                 else {
+                    if (character.Inventory == null)
+                    {
+                        character.Inventory = new List<Item>();
+                    }
                     if (character.Inventory.FirstOrDefault(x => x.Name == ItemType.Key && x.ObjectiveNumber == theLocalLock.KeyNumber) != null)
                     {
                         messageHandler.Write($"You've tried picking or bashing but you have the right key, stupid {character.Class}");
@@ -482,7 +491,7 @@ namespace TheWideWorld.Game
                     else
                     {
                         messageHandler.Write("You can do nothing in this situation. Find the key. \n");
-                        return true;                     
+                        return false;                     
                     }
                 }
             }

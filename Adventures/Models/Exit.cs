@@ -1,8 +1,10 @@
-﻿namespace TheWideWorld.Adventures.Models
+﻿using TheWideWorld.Game;
+
+namespace TheWideWorld.Adventures.Models
 {
     public class Exit
     {
-        public bool Locked = false;
+        public Lock Lock;
         public CompassDirection WallLocation;
         public Riddle Riddle;
         public int LeadsToRoom;
